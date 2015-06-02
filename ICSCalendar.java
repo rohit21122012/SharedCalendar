@@ -35,16 +35,16 @@ import net.fortuna.ical4j.model.property.Uid;
 import net.fortuna.ical4j.util.UidGenerator;
 
 	
-public class ICalFile {
+public class ICSCalendar {
 	private static int eventCount = 0;
 	private String FileName;
 	private Calendar myCalendar;
 	private int isonline = 0;
-	private TestSardine Connection;
+	private WebDavConnector Connection;
 	
-	public ICalFile(String fileName) {
+	public ICSCalendar(String fileName) {
 		FileName = fileName;
-		Connection = new TestSardine();
+		Connection = new WebDavConnector();
 		//Create a new calendar
 		try {
 			FileInputStream fin = new FileInputStream(fileName);

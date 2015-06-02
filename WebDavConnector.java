@@ -15,13 +15,13 @@ import com.github.sardine.Sardine;
 import com.github.sardine.SardineFactory;
 
 
-public class TestSardine {
+public class WebDavConnector {
 	Sardine sardine ;
 	
 	private String remoteHome = "http://localhost/webdav/";
 	private String localHome = "";
 	
-	public TestSardine() {
+	public WebDavConnector() {
 		sardine = SardineFactory.begin("amit", "amit");
 	}
 	
