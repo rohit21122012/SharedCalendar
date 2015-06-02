@@ -75,6 +75,7 @@ public class ICSCalendar {
 	}
 	
 	//ResolveConflict should be called only when online
+	@SuppressWarnings("unchecked")
 	public void ResolveConflict(){
 		String remoteCalFilePath = "http://localhost/webdav/" + FileName;
 		java.util.Date m1,m2;
@@ -82,11 +83,11 @@ public class ICSCalendar {
 		
 		//locking the folder because if we do not put lock,
 		//Problem: between exists check and putCalendar if somebody else calls putCalendar.
-		token = Connection.lock("http://localhost/webdav");
+		token = Connection.lock("http://localhost/webdav/iitmandi");
 		if(Connection.exists(remoteCalFilePath) == false){
 			Connection.putCalendar(FileName);
 		}
-		Connection.unlock("http://localhost/webdav",token);
+		Connection.unlock("http://localhost/webdav/iitmandi",token);
 		
 		//sync
 		while(true){
@@ -289,19 +290,19 @@ public class ICSCalendar {
 		}
 	}
 	
-	public void seeEventsBetween(int startDay, int endDay, int month, int year){
+	public void seeEventsBetween(int startDay, int startMonth, int startYear, int endDay, int endMonth, int endYear){
 		java.util.Calendar startDate = new GregorianCalendar();
-		startDate.set(java.util.Calendar.MONTH, month-1);
+		startDate.set(java.util.Calendar.MONTH, startMonth-1);
 		startDate.set(java.util.Calendar.DAY_OF_MONTH, startDay);
-		startDate.set(java.util.Calendar.YEAR, year);
+		startDate.set(java.util.Calendar.YEAR, startYear);
 		startDate.set(java.util.Calendar.HOUR_OF_DAY, 0);
 		startDate.set(java.util.Calendar.MINUTE, 0);
 		startDate.set(java.util.Calendar.SECOND, 0);
 
 		java.util.Calendar endDate = new GregorianCalendar();
-		endDate.set(java.util.Calendar.MONTH, month-1);
-		endDate.set(java.util.Calendar.DAY_OF_MONTH, endDay);
-		endDate.set(java.util.Calendar.YEAR, year);
+		endDate.set(java.util.Calendar.MONTH, endMonth-1);
+		endDate.set(java.util.Calendar.DAY_OF_MONTH, endDay+1);
+		endDate.set(java.util.Calendar.YEAR, endYear);
 		endDate.set(java.util.Calendar.HOUR_OF_DAY, 0);
 		endDate.set(java.util.Calendar.MINUTE, 0);	
 		endDate.set(java.util.Calendar.SECOND, 0);

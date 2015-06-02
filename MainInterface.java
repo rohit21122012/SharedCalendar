@@ -51,6 +51,7 @@ public class MainInterface {
 		int online;
 		int dayOfMonth, month, year;
 		int startTime, endTime; 
+		int startDay, startMonth, startYear, endDay, endMonth, endYear;
 		String summary;
 		switch (choice) {
 		case 0:
@@ -59,18 +60,29 @@ public class MainInterface {
 			System.out.println("Done");
 			break;
 		case 1:
-			System.out.println("Enter the month and year to see list of events");
-			month = sc.nextInt();
-			year = sc.nextInt();
+			System.out.println("Enter the startdate and enddate to see list of events");
+			System.out.println("Hint: 1 6 2015 31 12 2015");
+			System.out.print(">");
+			startDay = sc.nextInt();
+			startMonth = sc.nextInt();
+			startYear = sc.nextInt();
+			endDay = sc.nextInt();
+			endMonth = sc.nextInt();
+			endYear = sc.nextInt();
 			//myFile.seeMonthlyEvents(month, year);
+			myFile.seeEventsBetween(startDay, startMonth,  startYear, endDay, endMonth, endYear);
 			break;
 		case 2:
 			System.out.println("Enter date, month, year, and summary to add an event");
+			System.out.println("Hint: 1 1 2016 New Year!!! ");
+			System.out.print(">");
 			dayOfMonth = sc.nextInt();
 			month = sc.nextInt();
 			year = sc.nextInt();
 			summary = sc.nextLine();
 			System.out.println("Enter Start time (hr) and End time (hr) for the event");
+			System.out.println("Hint: 8 16");
+			System.out.print(">");
 			startTime = sc.nextInt();
 			endTime = sc.nextInt();
 			//description = sc.next();
@@ -90,6 +102,7 @@ public class MainInterface {
 			break;
 		case 4:
 			System.out.println("Press 1 to go online");
+			System.out.print(">");
 			online = sc.nextInt();
 			if(online == 1){
 				myFile.SetOnline(1);
