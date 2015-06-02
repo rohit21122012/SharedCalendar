@@ -10,7 +10,7 @@
  * */
 import java.util.Scanner;
 
-
+//Class MainInterface which provides the interface to the users for interacting with the calendar
 public class MainInterface {
 	/*
 	 * This class is the main interface class for the calendar

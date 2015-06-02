@@ -14,7 +14,7 @@ import com.github.sardine.DavResource;
 import com.github.sardine.Sardine;
 import com.github.sardine.SardineFactory;
 
-
+//Class WebDavConnector provides functionality for connecting to the WebDav server through WebDav protocol 
 public class WebDavConnector {
 	Sardine sardine ;
 	
@@ -104,44 +104,30 @@ public class WebDavConnector {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-//			String localCalFilePath = System.getProperty("user.dir") +"/" +  localFile;
-//			String remoteCalFilePath = remoteHome + localFile;
-//			
-//			try {
-//				InputStream fis = new FileInputStream(new File(remoteCalFilePath));
-//				sardine.put("http://localhost/webdav/iitmandi/CalendaR.txt", fis);
-//			} catch (IOException e) {
-//				// TODO Auto-generated catch block
-//				e.printStackTrace();
-//			}
 	}
-	public static void syncCalendar(){
-		
-		Sardine sardine = SardineFactory.begin("amit", "amit");
-		String home = "http://localhost/webdav/iitmandi/";
-		String calFile = home + "Calendar.ics";
-	}
+	
 	public static void main(String[] args) {
 		System.out.println("hello");
-//		System.out.println(System.getProperty("java.class.path"));
-//		Sardine sardine = SardineFactory.begin("rohit", "rohit");
-////		try {
-////			sardine.createDirectory("http://localhost/webdav/iitmandi");
-////		} catch (IOException e) {
-////			// TODO Auto-generated catch block
-////			e.printStackTrace();
-////		}
-//		List<DavResource> resources;
-//		try {
-//			resources = sardine.list("http://localhost/webdav/");
-//			for (DavResource res : resources)
-//			{
-//			     System.out.println(res); // calls the .toString() method.
-//			}
-//		} catch (IOException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
+		System.out.println(System.getProperty("java.class.path"));
+		Sardine sardine = SardineFactory.begin("amit", "amit");
+		InputStream fis;
+		try {
+			fis = new FileInputStream(new File("mycalendar.ics"));
+			sardine.put("http://localhost/webdav/mycalendar.ics",fis);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		List<DavResource> resources;
+		try {
+			resources = sardine.list("http://localhost/webdav/");
+			for (DavResource res : resources)
+			{
+			     System.out.println(res); // calls the .toString() method.
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 }
