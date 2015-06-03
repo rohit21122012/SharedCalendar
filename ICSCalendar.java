@@ -149,17 +149,22 @@ public class ICSCalendar {
 				Uid tempUid = ((VEvent)obj).getUid();
 				Component com = inl.getComponent(tempUid.getValue());
 				if(com == null){
-					r_l.add(com);
+					if(((VEvent)obj).getStatus() == Status.VTODO_NEEDS_ACTION){
+						
+					}
+					r_l.add(obj);
 				}
 				else{
 					if(isBoss == 1){
+						//All the common events in the local copy of boss and the remote copy will be either 
+						//(CONFIRMED or CANCELLED by the boss) or  
 						if(((VEvent)obj).getStatus() == Status.VTODO_NEEDS_ACTION){
 							((VEvent)com).getProperties().remove(((VEvent)com).getStatus());
 							((VEvent)com).getProperties().add(Status.VEVENT_CANCELLED);
 						}
 					}
 					else{
-						if(((VEvent)com).getStatus() != ((VEvent)obj).getStatus() && ((VEvent)com).getStatus() != Status.VTODO_NEEDS_ACTION){
+						if(((VEvent)com).getStatus() != ((VEvent)obj).getStatus()){
 							((VEvent)com).getProperties().remove(((VEvent)com).getStatus());
 							((VEvent)com).getProperties().add(((VEvent)obj).getStatus());
 						}
