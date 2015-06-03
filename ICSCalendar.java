@@ -143,33 +143,46 @@ public class ICSCalendar {
 				Uid tempUid = ((VEvent)obj).getUid();
 				Component com = inl.getComponent(tempUid.getValue());		//event corresponding to obj in l
 				if(com == null){
-					r_l.add(com);
-				}
-				else{
 					if(isBoss == 1){
 						if(((VEvent)obj).getStatus() == Status.VTODO_NEEDS_ACTION){
-							((VEvent)com).getProperties().remove(((VEvent)com).getStatus());
-							((VEvent)com).getProperties().add(Status.VEVENT_CANCELLED);
+							((VEvent)obj).getProperties().remove(((VEvent)obj).getStatus());
+							((VEvent)obj).getProperties().add(Status.VEVENT_CANCELLED);
 						}
 					}
-					else{
-						//if local events status is not equal to remotes and if local events status is not to cancel the event
-					
-						if(((VEvent)com).getStatus() != ((VEvent)obj).getStatus() && ((VEvent)com).getStatus() != Status.VTODO_NEEDS_ACTION){
-							((VEvent)com).getProperties().remove(((VEvent)com).getStatus());
-							((VEvent)com).getProperties().add(((VEvent)obj).getStatus());
-						}
-
+					r_l.add(obj);
 				}
+				else{
+						if(isBoss == 1){
+							//All the common events in the local copy of boss and the remote copy will be either 
+							//(CONFIRMED or CANCELLED by the boss) or  
+							if(((VEvent)obj).getStatus() == Status.VTODO_NEEDS_ACTION){
+								((VEvent)com).getProperties().remove(((VEvent)com).getStatus());
+								((VEvent)com).getProperties().add(Status.VEVENT_CANCELLED);
+							}
+						}
+						else{
+							//if local events status is not equal to remotes
+							if(((VEvent)com).getStatus() != ((VEvent)obj).getStatus()){
+	
+								((VEvent)com).getProperties().remove(((VEvent)com).getStatus());
+								((VEvent)com).getProperties().add(((VEvent)obj).getStatus());
+							}
+	
+						}
+					}
 			}
 			myCalendar.getComponents(Component.VEVENT).addAll(r_l);
+			
+			System.out.println("\nEvents scheduled to happen over next one month: ");
 			
 			if(isBoss == 1){
 				//filter will give next one month events
 				ComponentList eventsInNextOneMonth = (ComponentList)filter.filter(myCalendar.getComponents(Component.VEVENT));
+				
 				//IndexedComponentList used to sort the events by Start date of the event
 				IndexedComponentList eventsSortedByDate = new IndexedComponentList(eventsInNextOneMonth, Property.DTSTART);
 				ComponentList eventsOnDate;
+				
 				//To iterate over from startDate to endDate
 				//To print all the events in the next one month whose status is not cancelled sorted by date
 				for (java.util.Date date = startDate.getTime(); !start.after(endDate.getTime()); startDate.add(java.util.Calendar.DATE, 1), date = startDate.getTime()) 
@@ -181,7 +194,7 @@ public class ICSCalendar {
 						for(Object e : eventsOnDate){
 							//if the status of the event is not cancelled, print it and change its status to cancelled.
 							if(((VEvent)e).getStatus() != Status.VEVENT_CANCELLED){
-								System.out.println(e);
+								System.out.println("\nstart: " + ((VEvent)e).getStartDate() + "  end: " + ((VEvent)e).getEndDate() + "\t" + ((VEvent)e).getSummary());
 								((VEvent)e).getProperties().remove(((VEvent)e).getStatus());
 								((VEvent)e).getProperties().add(Status.VEVENT_CANCELLED);
 							}
@@ -230,7 +243,7 @@ public class ICSCalendar {
 			}
 		}
 		//end of while
-		}
+		
 	}
 	
 	public void printCalendar() {
@@ -241,6 +254,9 @@ public class ICSCalendar {
 	}
 	
 	public void addDayEvent(int startTime, int endTime, int dayofmonth, int month, int year, String description){
+		if(isonline == 1){
+			this.ResolveConflict();
+		}
 		
 		//adding the event in the object
 		java.util.Calendar startDate = new GregorianCalendar();
@@ -281,9 +297,7 @@ public class ICSCalendar {
 		
 		this.generateFile();
 		
-		if(isonline == 1){
-			this.ResolveConflict();
-		}
+		
 	}
 	
 	public void deleteDayEvent(int startTime, int endTime, int dayofmonth, int month, int year){
