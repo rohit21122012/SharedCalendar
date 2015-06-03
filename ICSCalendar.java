@@ -90,12 +90,12 @@ public class ICSCalendar {
 		if(Connection.exists(remoteCalFilePath) == false){
 			Connection.putCalendar(FileName);
 		}
-		try {
-			Thread.sleep(5000);
-		} catch (InterruptedException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
+//		try {
+//			Thread.sleep(5000);
+//		} catch (InterruptedException e1) {
+//			// TODO Auto-generated catch block
+//			e1.printStackTrace();
+//		}
 		
 		Connection.unlock(lockFilePath, token);
 
@@ -103,11 +103,13 @@ public class ICSCalendar {
 		while(true){
 			
 			//locking the file so as to keep the file and its time stamp consistent
-//			token = Connection.lock(remoteCalFilePath);
+			token = Connection.lock(lockFilePath);
+			
 			Connection.getCalendar(FileName);
 			//time stamp when getting file from server
 			m1 = Connection.GetModifiedDate(remoteCalFilePath);
-//			Connection.unlock(remoteCalFilePath,token);
+
+			Connection.unlock(lockFilePath, token);
 			
 			//code to make an Calendar object from the file stream obtained from server
 			FileInputStream fin = null;
@@ -245,18 +247,18 @@ public class ICSCalendar {
 			System.out.println("File generated");
 			//lock file before calculating time stamp because time stamp gets invalid if file is modified
 			//after calculating time stamp.
-//			token = Connection.lock(remoteCalFilePath);
+			token = Connection.lock(lockFilePath);
 			m2 = Connection.GetModifiedDate(remoteCalFilePath);
 			//if file on server was not modified while sync, then put the consistent copy on the server 
 			//else again sync with the modified file on server
 			if(DateUtils.isSameDay(m1, m2)){
 				Connection.putCalendar(FileName);
-//				Connection.unlock(remoteCalFilePath,token);
+				Connection.unlock(lockFilePath, token);
 				System.out.println("Sent back the calendar");
 				break;
 			}
 			else{
-//				Connection.unlock(remoteCalFilePath,token);
+				Connection.unlock(lockFilePath, token);
 				System.out.println("Time Stamp has changed");
 			}
 		
