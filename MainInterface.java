@@ -21,7 +21,7 @@ public class MainInterface {
 	private static void init(){
 		sc = new Scanner(System.in);
 		System.out.println("Welcome to Shared Calendar");
-		String localFile = "TestCal1.ics";
+		String localFile = "mycalendar.ics";
 		myFile = new ICSCalendar(localFile);
 	}
 	

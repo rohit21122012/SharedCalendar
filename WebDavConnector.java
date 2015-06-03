@@ -22,7 +22,7 @@ public class WebDavConnector {
 	private String localHome = "";
 	
 	public WebDavConnector() {
-		sardine = SardineFactory.begin("amit", "amit");
+		sardine = SardineFactory.begin("rohit", "rohit");
 	}
 	
 	public Date GetModifiedDate(String url){
@@ -73,7 +73,7 @@ public class WebDavConnector {
 		String remoteCalFilePath = remoteHome + localFile;
 		try {
 			if(sardine.exists(remoteCalFilePath)){
-				String token = sardine.lock(remoteCalFilePath);
+				//String token = sardine.lock(remoteCalFilePath);
 				InputStream is = sardine.get(remoteCalFilePath);
 				
 				//Write to a file
@@ -86,7 +86,7 @@ public class WebDavConnector {
 				}
 				os.close();
 				is.close();
-				sardine.unlock(remoteCalFilePath,token);
+				//sardine.unlock(remoteCalFilePath,token);
 			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -109,10 +109,12 @@ public class WebDavConnector {
 	public static void main(String[] args) {
 		System.out.println("hello");
 		System.out.println(System.getProperty("java.class.path"));
-		Sardine sardine = SardineFactory.begin("amit", "amit");
+		Sardine sardine = SardineFactory.begin("rohit", "rohit");
 		InputStream fis;
 		try {
 			fis = new FileInputStream(new File("mycalendar.ics"));
+//			String token = sardine.lock("http://localhost/webdav/");
+//			sardine.unlock("http://localhost/webdav/", token);
 			sardine.put("http://localhost/webdav/mycalendar.ics",fis);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -123,10 +125,11 @@ public class WebDavConnector {
 			resources = sardine.list("http://localhost/webdav/");
 			for (DavResource res : resources)
 			{
+				System.out.println(res.getCustomProps());
 			     System.out.println(res); // calls the .toString() method.
 			}
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
+
+		}catch(Exception e){
 			e.printStackTrace();
 		}
 	}
