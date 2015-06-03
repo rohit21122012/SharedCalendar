@@ -40,7 +40,9 @@ public class WebDavConnector {
 	public String lock(String url){
 		String token = null;
 		try {
+			System.out.println("Lock url is " + url);
 			token = sardine.lock(url);
+			System.err.println(url + " locked with token : " + token);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -51,11 +53,21 @@ public class WebDavConnector {
 	public void unlock(String url, String token){
 		try {
 			sardine.unlock(url,token);
+			System.err.println(url + " unlocked with token : " + token);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
+	
+	public void delete(String url){
+		try {
+			sardine.delete(url);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
 	
 	public boolean exists(String url){
 		boolean b = false;
@@ -73,7 +85,7 @@ public class WebDavConnector {
 		String remoteCalFilePath = remoteHome + localFile;
 		try {
 			if(sardine.exists(remoteCalFilePath)){
-				String token = sardine.lock(remoteCalFilePath);
+				//String token = sardine.lock(remoteCalFilePath);
 				InputStream is = sardine.get(remoteCalFilePath);
 				
 				//Write to a file
@@ -86,8 +98,18 @@ public class WebDavConnector {
 				}
 				os.close();
 				is.close();
-				sardine.unlock(remoteCalFilePath,token);
+				//sardine.unlock(remoteCalFilePath,token);
 			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	public void putLockFile(String lockFilePath){
+		try {
+			
+			sardine.createDirectory(lockFilePath);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
