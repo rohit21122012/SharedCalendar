@@ -10,6 +10,8 @@ import java.util.GregorianCalendar;
 import java.util.Iterator;
 import java.util.Scanner;
 
+import org.apache.commons.lang.time.DateUtils;
+
 import net.fortuna.ical4j.data.CalendarBuilder;
 import net.fortuna.ical4j.data.CalendarOutputter;
 import net.fortuna.ical4j.data.ParserException;
@@ -81,12 +83,22 @@ public class ICSCalendar {
 		
 		//locking the folder because if we do not put lock,
 		//Problem: between exists check and putCalendar if somebody else calls putCalendar.
-
-//		token = Connection.lock("http://localhost/webdav/");
+		String lockFilePath = "http://localhost/webdav/lockFile/";
+		if(Connection.exists(lockFilePath) == false)
+			Connection.putLockFile(lockFilePath);
+		token = Connection.lock(lockFilePath);
 		if(Connection.exists(remoteCalFilePath) == false){
 			Connection.putCalendar(FileName);
 		}
-//		Connection.unlock("http://localhost/webdav/",token);
+		try {
+			Thread.sleep(5000);
+		} catch (InterruptedException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		
+		Connection.unlock(lockFilePath, token);
+
 		//sync
 		while(true){
 			
@@ -142,8 +154,9 @@ public class ICSCalendar {
 			for (Object obj : r){
 				Uid tempUid = ((VEvent)obj).getUid();
 				Component com = inl.getComponent(tempUid.getValue());		//event corresponding to obj in l
-				if(com == null){
-					if(isBoss == 1){
+
+				if(com == null){			//if new event from remote
+					if(isBoss == 1){		//to make  (to be cancelled events) cancelled
 						if(((VEvent)obj).getStatus() == Status.VTODO_NEEDS_ACTION){
 							((VEvent)obj).getProperties().remove(((VEvent)obj).getStatus());
 							((VEvent)obj).getProperties().add(Status.VEVENT_CANCELLED);
@@ -152,30 +165,32 @@ public class ICSCalendar {
 					r_l.add(obj);
 				}
 				else{
-						if(isBoss == 1){
-							//All the common events in the local copy of boss and the remote copy will be either 
-							//(CONFIRMED or CANCELLED by the boss) or  
-							if(((VEvent)obj).getStatus() == Status.VTODO_NEEDS_ACTION){
-								((VEvent)com).getProperties().remove(((VEvent)com).getStatus());
-								((VEvent)com).getProperties().add(Status.VEVENT_CANCELLED);
-							}
-						}
-						else{
-							//if local events status is not equal to remotes
-							if(((VEvent)com).getStatus() != ((VEvent)obj).getStatus()){
-	
-								((VEvent)com).getProperties().remove(((VEvent)com).getStatus());
-								((VEvent)com).getProperties().add(((VEvent)obj).getStatus());
-							}
-	
+					if(isBoss == 1){
+						//All the common events in the local copy of boss and the remote copy will be either 
+						//(CONFIRMED or CANCELLED by the boss) or  
+						if(((VEvent)obj).getStatus() == Status.VTODO_NEEDS_ACTION){
+							((VEvent)com).getProperties().remove(((VEvent)com).getStatus());
+							((VEvent)com).getProperties().add(Status.VEVENT_CANCELLED);
 						}
 					}
+					else{
+						//if local events status is not equal to remotes
+						if(((VEvent)com).getStatus() != ((VEvent)obj).getStatus()){
+
+							((VEvent)com).getProperties().remove(((VEvent)com).getStatus());
+							((VEvent)com).getProperties().add(((VEvent)obj).getStatus());
+						}
+
+					}
+					
+				}
 			}
 			myCalendar.getComponents(Component.VEVENT).addAll(r_l);
 			
-			System.out.println("\nEvents scheduled to happen over next one month: ");
+			
 			
 			if(isBoss == 1){
+				System.out.println("\nEvents scheduled to happen over next one month: ");
 				//filter will give next one month events
 				ComponentList eventsInNextOneMonth = (ComponentList)filter.filter(myCalendar.getComponents(Component.VEVENT));
 				
@@ -223,26 +238,29 @@ public class ICSCalendar {
 				}
 				sc.close();
 			}
-			
+			System.out.println("Generating file");
 			//updating the local file from the myCalendar
 			this.generateFile();
 			
+			System.out.println("File generated");
 			//lock file before calculating time stamp because time stamp gets invalid if file is modified
 			//after calculating time stamp.
 //			token = Connection.lock(remoteCalFilePath);
 			m2 = Connection.GetModifiedDate(remoteCalFilePath);
 			//if file on server was not modified while sync, then put the consistent copy on the server 
 			//else again sync with the modified file on server
-			if(m1 == m2){
+			if(DateUtils.isSameDay(m1, m2)){
 				Connection.putCalendar(FileName);
 //				Connection.unlock(remoteCalFilePath,token);
+				System.out.println("Sent back the calendar");
 				break;
 			}
 			else{
 //				Connection.unlock(remoteCalFilePath,token);
+				System.out.println("Time Stamp has changed");
 			}
-		}
-		//end of while
+		
+		}//end of while
 		
 	}
 	
@@ -383,6 +401,10 @@ public class ICSCalendar {
 	}
 	
 	public void seeEventsBetween(int startDay, int startMonth, int startYear, int endDay, int endMonth, int endYear){
+		if(isonline == 1){
+			this.ResolveConflict();
+		}
+		
 		
 			//start date for the time period
 		java.util.Calendar startDate = new GregorianCalendar();
@@ -427,9 +449,7 @@ public class ICSCalendar {
 			i+=1;
 		}
 		
-		if(isonline == 1){
-			this.ResolveConflict();
-		}
+		
 
 	}
 

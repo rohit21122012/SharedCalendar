@@ -26,6 +26,7 @@ public class WebDavConnector {
 	}
 	
 	public Date GetModifiedDate(String url){
+//		Sardine sardine = SardineFactory.begin("rohit", "rohit");
 		List<DavResource> l = null;
 		try {
 			l = sardine.list(url);
@@ -34,13 +35,16 @@ public class WebDavConnector {
 			e.printStackTrace();
 		}
 		Date d = l.get(0).getModified();
+		System.out.println("date is " + d);
 		return d;
 	}
 	
 	public String lock(String url){
 		String token = null;
 		try {
+			System.out.println("Lock url is " + url);
 			token = sardine.lock(url);
+			System.err.println(url + " locked with token : " + token);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -48,9 +52,18 @@ public class WebDavConnector {
 		return token;
 	}
 	
+	public void delete(String url){
+		try {
+			sardine.delete(url);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
 	public void unlock(String url, String token){
 		try {
 			sardine.unlock(url,token);
+			System.err.println(url + " unlocked with token : " + token);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -93,6 +106,15 @@ public class WebDavConnector {
 			e.printStackTrace();
 		}
 	}
+	public void putLockFile(String lockFilePath){
+		try {
+			
+			sardine.createDirectory(lockFilePath);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 	
 	public void putCalendar(String localFile){
 		String remoteCalFilePath = remoteHome + localFile;
@@ -110,27 +132,31 @@ public class WebDavConnector {
 		System.out.println("hello");
 		System.out.println(System.getProperty("java.class.path"));
 		Sardine sardine = SardineFactory.begin("rohit", "rohit");
+//		WebDavConnector wb = new WebDavConnector();
+		
 		InputStream fis;
 		try {
 			fis = new FileInputStream(new File("mycalendar.ics"));
 //			String token = sardine.lock("http://localhost/webdav/");
 //			sardine.unlock("http://localhost/webdav/", token);
-			sardine.put("http://localhost/webdav/mycalendar.ics",fis);
+//			wb.putCalendar("mycalendar.ics");
+			sardine.delete("http://localhost/webdav/mycalendar.ics");
+//			System.out.println(wb.GetModifiedDate("http://localhost/webdav/mycalendar.ics"));
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		List<DavResource> resources;
-		try {
-			resources = sardine.list("http://localhost/webdav/");
-			for (DavResource res : resources)
-			{
-				System.out.println(res.getCustomProps());
-			     System.out.println(res); // calls the .toString() method.
-			}
-
-		}catch(Exception e){
-			e.printStackTrace();
-		}
+//		List<DavResource> resources;
+//		try {
+////			resources = sardine.list("http://localhost/webdav/");
+//			for (DavResource res : resources)
+//			{
+//				System.out.println(res.getCustomProps());
+//			     System.out.println(res); // calls the .toString() method.
+//			}
+//
+//		}catch(Exception e){
+//			e.printStackTrace();
+//		}
 	}
 }
