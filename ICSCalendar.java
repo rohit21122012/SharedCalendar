@@ -149,8 +149,11 @@ public class ICSCalendar {
 				Uid tempUid = ((VEvent)obj).getUid();
 				Component com = inl.getComponent(tempUid.getValue());
 				if(com == null){
-					if(((VEvent)obj).getStatus() == Status.VTODO_NEEDS_ACTION){
-						
+					if(isBoss == 1){
+						if(((VEvent)obj).getStatus() == Status.VTODO_NEEDS_ACTION){
+							((VEvent)obj).getProperties().remove(((VEvent)obj).getStatus());
+							((VEvent)obj).getProperties().add(Status.VEVENT_CANCELLED);
+						}
 					}
 					r_l.add(obj);
 				}
@@ -173,12 +176,16 @@ public class ICSCalendar {
 			}
 			myCalendar.getComponents(Component.VEVENT).addAll(r_l);
 			
+			System.out.println("\nEvents scheduled to happen over next one month: ");
+			
 			if(isBoss == 1){
 				//filter will give next one month events
 				ComponentList eventsInNextOneMonth = (ComponentList)filter.filter(myCalendar.getComponents(Component.VEVENT));
+				
 				//IndexedComponentList used to sort the events by Start date of the event
 				IndexedComponentList eventsSortedByDate = new IndexedComponentList(eventsInNextOneMonth, Property.DTSTART);
 				ComponentList eventsOnDate;
+				
 				//To iterate over from startDate to endDate
 				//To print all the events in the next one month whose status is not cancelled sorted by date
 				for (java.util.Date date = startDate.getTime(); !start.after(endDate.getTime()); startDate.add(java.util.Calendar.DATE, 1), date = startDate.getTime()) 
@@ -190,7 +197,7 @@ public class ICSCalendar {
 						for(Object e : eventsOnDate){
 							//if the status of the event is not cancelled, print it and change its status to cancelled.
 							if(((VEvent)e).getStatus() != Status.VEVENT_CANCELLED){
-								System.out.println(e);
+								System.out.println("\nstart: " + ((VEvent)e).getStartDate() + "  end: " + ((VEvent)e).getEndDate() + "\t" + ((VEvent)e).getSummary());
 								((VEvent)e).getProperties().remove(((VEvent)e).getStatus());
 								((VEvent)e).getProperties().add(Status.VEVENT_CANCELLED);
 							}
@@ -202,7 +209,7 @@ public class ICSCalendar {
 				//he/she wants to attend and the events which the boss selects will be marked as confirmed.
 				
 				//Indexing events by summary
-				IndexedComponentList eventsSortedBySummary = new IndexedComponentList(eventsInNextOneMonth, Property.DESCRIPTION);
+				IndexedComponentList eventsSortedBySummary = new IndexedComponentList(eventsInNextOneMonth, Property.SUMMARY);
 				String summary = new String();
 				VEvent tempEvent;
 				Scanner sc = new Scanner(System.in); 
