@@ -172,10 +172,10 @@ public class ICSCalendar {
 
 				if(com == null){			//if new event from remote
 					if(isBoss == 1){		//to make  (to be cancelled events) cancelled
-						if(((VEvent)obj).getStatus() == Status.VTODO_NEEDS_ACTION){
-							((VEvent)obj).getProperties().remove(((VEvent)obj).getStatus());
-							((VEvent)obj).getProperties().add(Status.VEVENT_CANCELLED);
-						}
+//						if(((VEvent)obj).getStatus() == Status.VTODO_NEEDS_ACTION){
+//							((VEvent)obj).getProperties().remove(((VEvent)obj).getStatus());
+//							((VEvent)obj).getProperties().add(Status.VEVENT_CANCELLED);
+//						}
 					}
 					r_l.add(obj);
 				}
@@ -183,10 +183,10 @@ public class ICSCalendar {
 					if(isBoss == 1){
 						//All the common events in the local copy of boss and the remote copy will be either 
 						//(CONFIRMED or CANCELLED by the boss) or  
-						if(((VEvent)obj).getStatus() == Status.VTODO_NEEDS_ACTION){
-							((VEvent)com).getProperties().remove(((VEvent)com).getStatus());
-							((VEvent)com).getProperties().add(Status.VEVENT_CANCELLED);
-						}
+//						if(((VEvent)obj).getStatus() == Status.VTODO_NEEDS_ACTION){
+//							((VEvent)com).getProperties().remove(((VEvent)com).getStatus());
+//							((VEvent)com).getProperties().add(Status.VEVENT_CANCELLED);
+//						}
 					}
 					else{
 						//if local events status is not equal to remotes
@@ -201,7 +201,9 @@ public class ICSCalendar {
 				}
 			}
 			for (Object object : r_l) {
-				myCalendar.getComponents(Component.VEVENT).add(object);
+				VEvent newEvent = (VEvent)object;
+				myCalendar.getComponents().add(newEvent);
+				//myCalendar.getComponents(Component.VEVENT).add(newEvent);
 			}
 			
 //			if(myCalendar.getComponents(Component.VEVENT).addAll(r_l) == true){
@@ -209,7 +211,7 @@ public class ICSCalendar {
 //			}
 			
 			if(isBoss == 1){
-				System.out.println("\nEvents scheduled to happen over next one month: ");
+				
 
 				//filter will give next one month events
 				ComponentList eventsInNextOneMonth = (ComponentList)filter.filter(myCalendar.getComponents(Component.VEVENT));
@@ -218,6 +220,7 @@ public class ICSCalendar {
 					System.out.println("\nNo events in next one month.");
 				}
 				else{
+					System.out.println("\nEvents scheduled to happen over next one month: ");
 					//IndexedComponentList used to sort the events by Start date of the event
 					IndexedComponentList eventsSortedByDate = new IndexedComponentList(eventsInNextOneMonth, Property.DTSTART);
 					
