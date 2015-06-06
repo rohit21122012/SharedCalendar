@@ -21,15 +21,17 @@ public class MainInterface {
 	private static void init(){
 		sc = new Scanner(System.in);
 		System.out.println("Welcome to Shared Calendar");
-		String localFile = "mycalendar.ics";
+		String localFile = "finaltesting.ics";
 		myFile = new ICSCalendar(localFile);
+		System.out.println("\nAre you boss/secretary(boss:1, secretary:0): ");
+		myFile.SetBoss(sc.nextInt());
 	}
 	
 	private static int prompt(){
 		System.out.println("Press 0 to exit");
 		System.out.println("Press 1 to see your calendar");
 		System.out.println("Press 2 to add an Event");
-		System.out.println("Press 3 to delete an Event");
+		System.out.println("Press 3 to cancel Event(s)");
 		System.out.println("Press 4 to toggle between offline and online");
 		return sc.nextInt();
 	}
@@ -44,7 +46,7 @@ public class MainInterface {
 				break;
 			choice = prompt();			
 		}
-		sc.close();
+		
 	}
 
 	private static void performChoice(int choice) {
@@ -97,8 +99,8 @@ public class MainInterface {
 			System.out.println("Enter Start time (hr) and End time (hr) for the event");
 			startTime = sc.nextInt();
 			endTime = sc.nextInt();
-			myFile.deleteDayEvent(startTime, endTime, dayOfMonth, month, year);
-			System.out.println("Events deleted for " + startTime + ":00-" + endTime + ":00  "  + dayOfMonth + "/" + month + "/" + year);
+			myFile.CancelEvent(startTime, endTime, dayOfMonth, month, year);
+			System.out.println("Event(s) cancelled for " + startTime + ":00-" + endTime + ":00  "  + dayOfMonth + "/" + month + "/" + year);
 			break;
 		case 4:
 			System.out.println("Press 1 to go online");

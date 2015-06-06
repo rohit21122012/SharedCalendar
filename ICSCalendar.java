@@ -4,6 +4,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.SocketException;
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.GregorianCalendar;
@@ -41,10 +42,12 @@ public class ICSCalendar {
 	private int isonline;
 	private WebDavConnector Connection;
 	public int isBoss;
+	private Scanner scan; 
 	
 	public ICSCalendar(String fileName) {
 		FileName = fileName;
 		Connection = new WebDavConnector();
+		scan = new Scanner(System.in);
 		//Create a new calendar
 		try {
 			FileInputStream fin = new FileInputStream(fileName);
@@ -60,6 +63,7 @@ public class ICSCalendar {
 			myCalendar.getProperties().add(new ProdId("-//IITMandi //Calendar using iCal4j 1.0//EN"));
 			myCalendar.getProperties().add(net.fortuna.ical4j.model.property.Version.VERSION_2_0);
 			myCalendar.getProperties().add(CalScale.GREGORIAN);
+			this.addDayEvent(0, 0, 0, 0, 0, "NULL Event");
 		}	
 		isonline = 0;
 		isBoss = 0;
@@ -80,8 +84,7 @@ public class ICSCalendar {
 		String remoteCalFilePath = "http://localhost/webdav/" + FileName;
 		java.util.Date m1,m2;
 		String token;
-		
-		//locking the folder because if we do not put lock,
+			//locking the folder because if we do not put lock,
 		//Problem: between exists check and putCalendar if somebody else calls putCalendar.
 		String lockFilePath = "http://localhost/webdav/lockFile/";
 		if(Connection.exists(lockFilePath) == false)
@@ -89,7 +92,11 @@ public class ICSCalendar {
 		token = Connection.lock(lockFilePath);
 		if(Connection.exists(remoteCalFilePath) == false){
 			Connection.putCalendar(FileName);
+			Connection.unlock(lockFilePath, token);
+			this.ResolveConflict();
+			return;
 		}
+
 //		try {
 //			Thread.sleep(5000);
 //		} catch (InterruptedException e1) {
@@ -98,17 +105,17 @@ public class ICSCalendar {
 //		}
 		
 		Connection.unlock(lockFilePath, token);
-
+		int z;  //z is used later in the method
 		//sync
 		while(true){
+			z = 1;
 			
 			//locking the file so as to keep the file and its time stamp consistent
 			token = Connection.lock(lockFilePath);
-			
+
 			Connection.getCalendar(FileName);
 			//time stamp when getting file from server
 			m1 = Connection.GetModifiedDate(remoteCalFilePath);
-
 			Connection.unlock(lockFilePath, token);
 			
 			//code to make an Calendar object from the file stream obtained from server
@@ -132,6 +139,7 @@ public class ICSCalendar {
 			
 			java.util.Calendar startDate = new GregorianCalendar();
 			
+			
 			java.util.Calendar endDate = new GregorianCalendar();
 			endDate.set(java.util.Calendar.MONTH, startDate.get(java.util.Calendar.MONTH) + 1);
 			endDate.set(java.util.Calendar.DAY_OF_MONTH, startDate.get(java.util.Calendar.DAY_OF_MONTH) +1);
@@ -144,6 +152,9 @@ public class ICSCalendar {
 			Filter filter = new Filter(new PeriodRule(period));
 
 			ComponentList l = (ComponentList)filter.filter(myCalendar.getComponents(Component.VEVENT));
+			if(l.size() == 0){
+				System.out.println("hey this is empty");
+			}
 			ComponentList r = (ComponentList)filter.filter(remoteCalendar.getComponents(Component.VEVENT));
 			
 			//IndexedComponentList gives ComponentList indexed with the property mentioned,
@@ -153,6 +164,8 @@ public class ICSCalendar {
 			//r_l will store the events present in r but not in l
 			ComponentList r_l = new ComponentList();
 			
+			
+						
 			for (Object obj : r){
 				Uid tempUid = ((VEvent)obj).getUid();
 				Component com = inl.getComponent(tempUid.getValue());		//event corresponding to obj in l
@@ -187,74 +200,106 @@ public class ICSCalendar {
 					
 				}
 			}
-			myCalendar.getComponents(Component.VEVENT).addAll(r_l);
+			for (Object object : r_l) {
+				myCalendar.getComponents(Component.VEVENT).add(object);
+			}
 			
-			
+//			if(myCalendar.getComponents(Component.VEVENT).addAll(r_l) == true){
+//				System.out.println("myCalendar is modified with remote content");
+//			}
 			
 			if(isBoss == 1){
 				System.out.println("\nEvents scheduled to happen over next one month: ");
+
 				//filter will give next one month events
 				ComponentList eventsInNextOneMonth = (ComponentList)filter.filter(myCalendar.getComponents(Component.VEVENT));
-				
-				//IndexedComponentList used to sort the events by Start date of the event
-				IndexedComponentList eventsSortedByDate = new IndexedComponentList(eventsInNextOneMonth, Property.DTSTART);
-				ComponentList eventsOnDate;
-				
-				//To iterate over from startDate to endDate
-				//To print all the events in the next one month whose status is not cancelled sorted by date
-				for (java.util.Date date = startDate.getTime(); !start.after(endDate.getTime()); startDate.add(java.util.Calendar.DATE, 1), date = startDate.getTime()) 
-		        {
-					//All the events on the date passed as argument returned as a list
-					eventsOnDate = eventsSortedByDate.getComponents((new Date(date)).toString());
-		            
-					if(eventsOnDate.isEmpty() == false){
-						for(Object e : eventsOnDate){
-							//if the status of the event is not cancelled, print it and change its status to cancelled.
-							if(((VEvent)e).getStatus() != Status.VEVENT_CANCELLED){
-								System.out.println("\nstart: " + ((VEvent)e).getStartDate() + "  end: " + ((VEvent)e).getEndDate() + "\t" + ((VEvent)e).getSummary());
+
+				if(eventsInNextOneMonth.size() == 0){
+					System.out.println("\nNo events in next one month.");
+				}
+				else{
+					//IndexedComponentList used to sort the events by Start date of the event
+					IndexedComponentList eventsSortedByDate = new IndexedComponentList(eventsInNextOneMonth, Property.DTSTART);
+					
+					ComponentList eventsOnDate = new ComponentList();
+					//ComponentList eventsOnDateDuplicate; //to avoid ConcurrentModificationExecution which happen in the loop below
+					//To iterate over from startDate to endDate
+					//To print all the events in the next one month whose status is not cancelled sorted by date
+					java.util.Date date = startDate.getTime();
+					date.setMinutes(0);
+					date.setSeconds(0);
+							
+					
+					ComponentList eventsToChooseFrom = new ComponentList();
+					for (; !date.after(endDate.getTime()); date.setHours(date.getHours()+1)) 
+			        {
+						//System.out.println(date);
+						//All the events on the date passed as argument returned as a list
+						eventsOnDate = eventsSortedByDate.getComponents((new DateTime(date)).toString());
+						
+						
+//						for(Object obj : eventsOnDate1){
+//							if(((VEvent)(obj)).getStatus().equals(Status.VEVENT_CANCELLED) == false){
+//								eventsOnDate.add(obj);
+//							}
+//						}
+						//System.out.println("Size is " + eventsOnDate.size());
+						
+						for(int i = 0; i < eventsOnDate.size(); i++){
+							VEvent eventWithSameDate = (VEvent) eventsOnDate.get(i);
+							if(eventWithSameDate.getStatus().equals(Status.VEVENT_CANCELLED) == true){
+								eventsOnDate.remove(eventWithSameDate);
+							//	System.out.println("Size now is " + eventsOnDate.size());
+							}
+						}
+//							if(((VEvent)(obj)).getStatus().equals(Status.VEVENT_CANCELLED) == false){
+//								eventsOnDate.add(obj);
+//							}
+//						}
+						SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy EEE ");
+			            if(eventsOnDate.size() > 1){
+							
+							for(Object e : eventsOnDate){
+								VEvent temp = (VEvent) e;
+								String eventDate = formatter.format(temp.getStartDate().getDate().getTime());
+								System.out.println(z + ". " +temp.getStatus().getValue() + " " +  eventDate + " " + temp.getSummary().toString());
+
+								//System.out.println("\n" + z + "\tstart: " + ((VEvent)e).getStartDate() + "  end: " + ((VEvent)e).getEndDate() + "\t" + ((VEvent)e).getSummary());
 								((VEvent)e).getProperties().remove(((VEvent)e).getStatus());
 								((VEvent)e).getProperties().add(Status.VEVENT_CANCELLED);
+								eventsToChooseFrom.add(e);
+								z = z + 1;
+				            }
+							System.out.println("These events are conflicting, enter the eventno of the event you want to attend: ");
+						
+							z = this.scan.nextInt();
+							while(z<=0 && z > eventsOnDate.size()){
+								System.out.println("Re-enter the Event No appropriately");
+								z = this.scan.nextInt();
 							}
-			            }
-					}
-		        }
-				
-				//Now, all the events will be having status as cancelled.Now, we will ask the boss which events(out of those which are printed on screen) 
-				//he/she wants to attend and the events which the boss selects will be marked as confirmed.
-				
-				//Indexing events by summary
-				IndexedComponentList eventsSortedBySummary = new IndexedComponentList(eventsInNextOneMonth, Property.SUMMARY);
-				String summary = new String();
-				VEvent tempEvent;
-				Scanner sc = new Scanner(System.in); 
-				System.out.println("\nEnter the events you want to attend(enter \"exit\" to exit): ");
-				while(true){
-					summary = sc.nextLine();
-					if(summary.equals("exit"))
-						break;
-					//tempEvent stores the event with description as value of summary
-					tempEvent = (VEvent)(eventsSortedBySummary.getComponent(summary));
-					tempEvent.getProperties().remove(tempEvent.getStatus());
-					//changing the events status to confirmed
-					tempEvent.getProperties().add(Status.VEVENT_CONFIRMED);
+							((VEvent)eventsToChooseFrom.get(z-1)).getProperties().remove(((VEvent)eventsToChooseFrom.get(z-1)).getStatus());
+							((VEvent)eventsToChooseFrom.get(z-1)).getProperties().add(Status.VEVENT_CONFIRMED);
+						
+						}
+			        }
 				}
-				sc.close();
 			}
-			System.out.println("Generating file");
+			//System.out.println("Generating file");
 			//updating the local file from the myCalendar
 			this.generateFile();
 			
-			System.out.println("File generated");
+			//System.out.println("File generated");
 			//lock file before calculating time stamp because time stamp gets invalid if file is modified
 			//after calculating time stamp.
 			token = Connection.lock(lockFilePath);
 			m2 = Connection.GetModifiedDate(remoteCalFilePath);
+			//System.out.println("\nm2: " + m2);
 			//if file on server was not modified while sync, then put the consistent copy on the server 
 			//else again sync with the modified file on server
-			if(DateUtils.isSameDay(m1, m2)){
+
+			if(m1.equals(m2)){   
 				Connection.putCalendar(FileName);
 				Connection.unlock(lockFilePath, token);
-				System.out.println("Sent back the calendar");
 				break;
 			}
 			else{
@@ -300,7 +345,11 @@ public class ICSCalendar {
 		DateTime end = new DateTime(endDate.getTime());
 		VEvent event = new VEvent(start, end, description);
 		//adding the event with status as TENTATIVE
-		event.getProperties().add(Status.VEVENT_TENTATIVE);
+		if(isBoss == 1)
+			event.getProperties().add(Status.VEVENT_CONFIRMED);
+		else
+			event.getProperties().add(Status.VEVENT_TENTATIVE);
+		
 		UidGenerator ug;
 		try {
 			ug = new UidGenerator(Integer.toString(eventCount));
@@ -316,39 +365,9 @@ public class ICSCalendar {
 		eventCount += 1;
 		
 		this.generateFile();
+		System.out.println("FIle generated");
 		
 		
-	}
-	
-	public void deleteDayEvent(int startTime, int endTime, int dayofmonth, int month, int year){
-		java.util.Calendar startDate = new GregorianCalendar();
-		startDate.set(java.util.Calendar.MONTH, month-1);
-		startDate.set(java.util.Calendar.DAY_OF_MONTH, dayofmonth);
-		startDate.set(java.util.Calendar.YEAR, year);
-		startDate.set(java.util.Calendar.HOUR_OF_DAY, startTime);
-		startDate.set(java.util.Calendar.MINUTE, 0);
-		startDate.set(java.util.Calendar.SECOND, 0);
-
-		java.util.Calendar endDate = new GregorianCalendar();
-		endDate.set(java.util.Calendar.MONTH, month-1);
-		endDate.set(java.util.Calendar.DAY_OF_MONTH, dayofmonth);
-		endDate.set(java.util.Calendar.YEAR, year);
-		endDate.set(java.util.Calendar.HOUR_OF_DAY, endTime);
-		endDate.set(java.util.Calendar.MINUTE, 0);	
-		endDate.set(java.util.Calendar.SECOND, 0);
-		
-		DateTime start = new DateTime(startDate.getTime());
-		DateTime end = new DateTime(endDate.getTime());
-		
-		Period period = new Period(start, end);
-		@SuppressWarnings("deprecation")
-		Filter filter = new Filter(new PeriodRule(period));
-
-		Collection eventsToday = filter.filter(myCalendar.getComponents(Component.VEVENT));
-		
-		if(myCalendar.getComponents().containsAll(eventsToday)){
-			myCalendar.getComponents().removeAll(eventsToday);
-		}
 	}
 	
 	public void CancelEvent(int startTime, int endTime, int dayofmonth, int month, int year){
@@ -371,44 +390,109 @@ public class ICSCalendar {
 		
 		DateTime start = new DateTime(startDate.getTime());
 		DateTime end = new DateTime(endDate.getTime());
-		
+	
 		Period period = new Period(start, end);
 		Filter filter = new Filter(new PeriodRule(period));
 
-		ComponentList eventsToday = (ComponentList)filter.filter(myCalendar.getComponents(Component.VEVENT));
+		ComponentList eventsToday1 = (ComponentList)filter.filter(myCalendar.getComponents(Component.VEVENT));
+		ComponentList eventsToday = new ComponentList();
 		
+		//eventsToday is formed by removing 'cancelled' events from eventsToday1
+		for(Object obj : eventsToday1){
+			if(((VEvent)(obj)).getStatus().equals(Status.VEVENT_CANCELLED) == false){
+				eventsToday.add(obj);
+			}
+		}
+		
+		SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy EEE ");
+		//If there are more than 1 events in that period
 		if(eventsToday.size() > 1){
-			System.out.println("\nThere are multiple events in this period.");
-			return;
+			System.out.println("\nThere are multiple events in this period: ");
+			int z = 1;
+			for(Object obj : eventsToday){
+				VEvent temp = (VEvent) obj;
+				String eventDate = formatter.format(temp.getStartDate().getDate().getTime());
+				System.out.println(z + ". " +temp.getStatus().getValue() + " " +  eventDate + " " + temp.getSummary().toString());
+
+				z = z + 1;
+			}
+			if(isBoss == 1)
+				System.out.println("\n Do you want to cancel all the events ?(Yes-1, No-0): ");
+			else
+				System.out.println("\n Do you want to request cancel for all the events ?(Yes-1, No-0): ");
+
+			z = scan.nextInt();
+			if(z == 1){
+				if(isBoss == 1){
+					for(Object obj : eventsToday){
+						((VEvent)(obj)).getProperties().remove(((VEvent)(obj)).getStatus());
+						((VEvent)(obj)).getProperties().add(Status.VEVENT_CANCELLED);
+					}
+				}
+				else{
+					for(Object obj : eventsToday){
+						((VEvent)(obj)).getProperties().remove(((VEvent)(obj)).getStatus());
+						((VEvent)(obj)).getProperties().add(Status.VTODO_NEEDS_ACTION);
+					}
+				}
+			}
+			else{
+				int y;
+				if(isBoss == 1){
+					System.out.println("Enter the event nos of the events which you want to cancel(0 to exit): ");
+					while(true){
+						y = scan.nextInt();
+						if(y == 0){
+							break;
+						}
+						if(y > eventsToday.size()){
+							System.out.println("Enter a valid no");
+							continue;
+						}
+						((VEvent)(eventsToday.get(y-1))).getProperties().remove( ((VEvent)(eventsToday.get(y-1))).getStatus() );
+						((VEvent)(eventsToday.get(y-1))).getProperties().add( Status.VEVENT_CANCELLED );
+					}
+				}
+				else{
+					System.out.println("Enter the event nos of the events for which you want to request cancel(0 to exit): ");
+					while(true){
+						y = scan.nextInt();
+						if(y > eventsToday.size()){
+							System.out.println("Enter a valid no");
+							continue;
+						}
+						((VEvent)(eventsToday.get(y-1))).getProperties().remove( ((VEvent)(eventsToday.get(y-1))).getStatus() );
+						((VEvent)(eventsToday.get(y-1))).getProperties().add( Status.VTODO_NEEDS_ACTION);
+					}
+				}
+			}
 		}
 		else if(eventsToday.size() == 0){
 			System.out.println("\nNo event in this period");
 			return;
 		}
-		else{
+		else if(eventsToday.size() == 1){
 			VEvent tempEvent = (VEvent)(eventsToday.get(0));
-			if(tempEvent.getStatus() != Status.VEVENT_CANCELLED){
-				tempEvent.getProperties().remove(tempEvent.getStatus());
-				if(isBoss == 1){
-					tempEvent.getProperties().add(Status.VEVENT_CANCELLED);
-				}
-				else{
-					tempEvent.getProperties().add(Status.VTODO_NEEDS_ACTION);
-				}
-				if(isonline == 1){
-					this.ResolveConflict();
-				}
+			tempEvent.getProperties().remove(tempEvent.getStatus());
+			if(isBoss == 1){
+				tempEvent.getProperties().add(Status.VEVENT_CANCELLED);
 			}
+			else{
+				tempEvent.getProperties().add(Status.VEVENT_TENTATIVE);
+			}
+		}
+		this.generateFile();
+		if(isonline == 1){
+			this.ResolveConflict();
 		}
 	}
 	
 	public void seeEventsBetween(int startDay, int startMonth, int startYear, int endDay, int endMonth, int endYear){
 		if(isonline == 1){
 			this.ResolveConflict();
-		}
-		
-		
+		}		
 			//start date for the time period
+
 		java.util.Calendar startDate = new GregorianCalendar();
 		startDate.set(java.util.Calendar.MONTH, startMonth-1);
 		startDate.set(java.util.Calendar.DAY_OF_MONTH, startDay);
@@ -436,7 +520,7 @@ public class ICSCalendar {
 
 		ComponentList eventsBetween = (ComponentList)filter.filter(myCalendar.getComponents(Component.VEVENT));
 		System.out.println("\nEvents between this period: ");
-		
+
 		
 		SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy EEE ");
 		
@@ -450,9 +534,6 @@ public class ICSCalendar {
 			System.out.println(i + ". " +v.getStatus().getValue() + " " +  date + " " + v.getSummary().toString());
 			i+=1;
 		}
-		
-		
-
 	}
 
 	public void generateFile(){

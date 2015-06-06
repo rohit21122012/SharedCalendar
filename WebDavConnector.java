@@ -32,16 +32,16 @@ public class WebDavConnector {
 			e.printStackTrace();
 		}
 		Date d = l.get(0).getModified();
-		System.out.println("date is " + d);
+		//System.out.println("date is " + d);
 		return d;
 	}
 	
 	public String lock(String url){
 		String token = null;
 		try {
-			System.out.println("Lock url is " + url);
+	//		System.out.println("Lock url is " + url);
 			token = sardine.lock(url);
-			System.err.println(url + " locked with token : " + token);
+	//		System.err.println(url + " locked with token : " + token);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -60,12 +60,13 @@ public class WebDavConnector {
 	public void unlock(String url, String token){
 		try {
 			sardine.unlock(url,token);
-			System.err.println(url + " unlocked with token : " + token);
+	//		System.err.println(url + " unlocked with token : " + token);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
+	
 	
 	public boolean exists(String url){
 		boolean b = false;
@@ -97,7 +98,8 @@ public class WebDavConnector {
 				
 				os.close();
 				is.close();
-				System.out.println("Remote file written over local file");
+	//			System.out.println("Remote file written over local file");
+
 				//sardine.unlock(remoteCalFilePath,token);
 			}
 		} catch (IOException e) {
@@ -105,6 +107,7 @@ public class WebDavConnector {
 			e.printStackTrace();
 		}
 	}
+	
 	public void putLockFile(String lockFilePath){
 		try {
 			
@@ -135,11 +138,11 @@ public class WebDavConnector {
 		
 		InputStream fis;
 		try {
-			fis = new FileInputStream(new File("mycalendar.ics"));
+//			fis = new FileInputStream(new File("mycalendar.ics"));
 //			String token = sardine.lock("http://localhost/webdav/");
 //			sardine.unlock("http://localhost/webdav/", token);
 //			wb.putCalendar("mycalendar.ics");
-			sardine.delete("http://localhost/webdav/mycalendar.ics");
+			sardine.delete("http://localhost/webdav/finaltesting.ics");
 //			System.out.println(wb.GetModifiedDate("http://localhost/webdav/mycalendar.ics"));
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
